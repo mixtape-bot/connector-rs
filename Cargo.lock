@@ -95,7 +95,6 @@ dependencies = [
  "jni",
  "libsamplerate-sys",
  "log",
- "minimp3-sys",
  "mpg123-sys",
  "ogg-sys",
  "vorbis-sys",
@@ -202,15 +201,6 @@ name = "memchr"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a"
-
-[[package]]
-name = "minimp3-sys"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e21c73734c69dc95696c9ed8926a2b393171d98b3f5f5935686a26a487ab9b90"
-dependencies = [
- "cc",
-]
 
 [[package]]
 name = "mpg123-sys"
