@@ -2,19 +2,22 @@ use audiopus_sys::{OPUS_OK, opus_decoder_create, opus_decoder_destroy, opus_deco
 use jni::objects::{JByteBuffer, JClass};
 use jni::sys::{jint, jlong, jobject};
 use jni::JNIEnv;
+use log::debug;
 use crate::util::get_direct_short_buffer_address;
 
 // decoder
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusDecoderLibrary_create(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusDecoderLibrary_create(
     _: JNIEnv,
     _: JClass,
     sample_rate: jint,
     channel_count: jint,
 ) -> jlong {
+     debug!("(opus) decoder:create, sample_rate: {}, channel_count: {}", sample_rate, channel_count);
+
     /* create the decoder */
     let mut opus_code = 0;
-    let decoder = unsafe { opus_decoder_create(sample_rate, channel_count, &mut opus_code) };
+    let decoder = opus_decoder_create(sample_rate, channel_count, &mut opus_code);
 
     /* check for errors. */
     if opus_code == OPUS_OK || !decoder.is_null() {
@@ -26,17 +29,19 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusDe
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusDecoderLibrary_destroy(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusDecoderLibrary_destroy(
     _: JNIEnv,
     _: JClass,
     decoder_ptr: jlong,
 ) {
-    let decoder = Box::leak(unsafe { Box::from_raw(decoder_ptr as *mut OpusDecoder) });
-    unsafe { opus_decoder_destroy(decoder) }
+    debug!("(opus) decoder:destroy, instance: {}", decoder_ptr);
+
+    let decoder = Box::leak(Box::from_raw(decoder_ptr as *mut OpusDecoder));
+    opus_decoder_destroy(decoder)
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusDecoderLibrary_decode(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusDecoderLibrary_decode(
     env: JNIEnv,
     _: JClass,
     decoder_ptr: jlong,
@@ -45,8 +50,10 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusDe
     output_buffer: jobject,
     frame_size: jint
 ) -> jint {
+    debug!("(opus) decoder:decode, instance: {}, input_size: {}, frame_size: {}", decoder_ptr, input_size, frame_size);
+
     /* get the decoder */
-    let decoder = Box::leak(unsafe { Box::from_raw(decoder_ptr as *mut OpusDecoder) });
+    let decoder = Box::leak(Box::from_raw(decoder_ptr as *mut OpusDecoder));
 
     /* get the input/output buffers */
     let input = env.get_direct_buffer_address(input_buffer)
@@ -55,12 +62,12 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusDe
     let output = get_direct_short_buffer_address(env, output_buffer)
         .expect("Unable to resolve output buffer address.");
 
-    unsafe { opus_decode(decoder, input.as_ptr(), input_size, output.as_mut_ptr(), frame_size, 0) as i32 }
+    opus_decode(decoder, input.as_ptr(), input_size, output.as_mut_ptr(), frame_size, 0) as i32
 }
 
 // encoder
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusEncoderLibrary_create(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusEncoderLibrary_create(
     _: JNIEnv,
     _: JClass,
     sample_rate: jint,
@@ -68,14 +75,15 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusEn
     application: jint,
     quality: jint,
 ) -> jlong {
+    debug!("(opus) encoder:create, sample_rate: {}, channel_count: {}, application: {}, quality: {}", sample_rate, channel_count, application, quality);
+
     /* create the encoder. */
     let mut opus_code = 0;
-    let encoder = unsafe { opus_encoder_create(sample_rate, channel_count, application, &mut opus_code) };
+    let encoder = opus_encoder_create(sample_rate, channel_count, application, &mut opus_code);
 
     /* check for errors. */
     if opus_code == OPUS_OK || !encoder.is_null() {
-        unsafe { opus_encoder_ctl(encoder, OPUS_SET_COMPLEXITY_REQUEST, quality) };
-
+        opus_encoder_ctl(encoder, OPUS_SET_COMPLEXITY_REQUEST, quality);
         return encoder as jlong
     };
 
@@ -83,17 +91,19 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusEn
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusEncoderLibrary_destroy(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusEncoderLibrary_destroy(
     _: JNIEnv,
     _: JClass,
     encoder_ptr: jlong
 ) {
-    let encoder = Box::leak(unsafe { Box::from_raw(encoder_ptr as *mut OpusEncoder) });
-    unsafe { opus_encoder_destroy(encoder) }
+    debug!("(opus) encoder:destroy, instance: {}", encoder_ptr);
+
+    let encoder = Box::leak(Box::from_raw(encoder_ptr as *mut OpusEncoder));
+    opus_encoder_destroy(encoder)
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusEncoderLibrary_encode(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusEncoderLibrary_encode(
     jni: JNIEnv,
     _: JClass,
     encoder_ptr: jlong,
@@ -102,8 +112,10 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusEn
     output_buffer: JByteBuffer,
     output_capacity: jint
 ) -> jint {
+    debug!("(opus) encoder:encode, instance: {}, frame_size: {}, output_capacity: {}", encoder_ptr, frame_size, output_capacity);
+
     /* get the decoder */
-    let encoder = Box::leak(unsafe { Box::from_raw(encoder_ptr as *mut OpusEncoder) });
+    let encoder = Box::leak(Box::from_raw(encoder_ptr as *mut OpusEncoder));
 
     /* get the input/output buffers */
     let input_ptr = get_direct_short_buffer_address(jni, input_buffer)
@@ -115,5 +127,5 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusEn
         .as_mut_ptr();
 
     /* decode */
-    unsafe { opus_encode(encoder, input_ptr, frame_size, output_ptr, output_capacity) }
+    opus_encode(encoder, input_ptr, frame_size, output_ptr, output_capacity)
 }

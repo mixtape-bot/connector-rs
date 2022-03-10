@@ -49,12 +49,10 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_mp3_
     };
 
     /* get input/output */
-    log::debug!("c");
     let input = get_direct_buffer_address(jni, input_buffer)
         .expect("Unable to get input buffer.")
         .as_ptr();
 
-    log::debug!("d");
     let output = get_direct_buffer_address(jni, output_buffer)
         .expect("Unable to get input buffer.")
         .as_mut_ptr();

@@ -5,7 +5,7 @@ use libsamplerate_sys::*;
 use log::debug;
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_SampleRateLibrary_create(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_SampleRateLibrary_create(
     _: JNIEnv,
     _: JClass,
     src_type: jint,
@@ -14,14 +14,14 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_
     debug!("(samplerate) create, src_type: {}, channels: {}", src_type, channels);
 
     let mut error = 0;
-    let handle = unsafe { src_new(src_type, channels, &mut error) as jlong };
+    let handle = src_new(src_type, channels, &mut error) as jlong;
     debug!("(samplerate) new: {}", handle);
 
     handle
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_SampleRateLibrary_destroy(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_SampleRateLibrary_destroy(
     _: JNIEnv,
     _: JClass,
     instance: jlong,
@@ -31,22 +31,22 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_
     let handle = instance as *mut SRC_STATE;
 
     /* destroy given instance */
-    unsafe { src_delete(handle) };
+    src_delete(handle);
     std::mem::drop(handle);
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_SampleRateLibrary_reset(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_SampleRateLibrary_reset(
     _: JNIEnv,
     _: JClass,
     instance: jlong,
 ) {
     debug!("(samplerate) reset, handle: {}", instance);
-    unsafe { src_reset(instance as *mut SRC_STATE) };
+    src_reset(instance as *mut SRC_STATE);
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_SampleRateLibrary_process(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_SampleRateLibrary_process(
     env: JNIEnv,
     _: JClass,
     instance: jlong,
@@ -77,11 +77,8 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_
         .expect("Unable to get input array.");
 
     let in_ptr = in_auto_ptr.as_ptr();
-    let input;
-    unsafe {
-        let in_size = in_auto_ptr.size().unwrap() as usize;
-        input = Vec::from_raw_parts(in_ptr as *mut f32, in_size, in_size)
-    }
+    let in_size = in_auto_ptr.size().unwrap() as usize;
+    let input = Vec::from_raw_parts(in_ptr as *mut f32, in_size, in_size);
 
     /* output */
     let out_auto_ptr = env
@@ -89,11 +86,8 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_
         .expect("Unable to get output array.");
 
     let out_ptr = out_auto_ptr.as_ptr();
-    let mut output;
-    unsafe {
-        let out_size = out_auto_ptr.size().unwrap() as usize;
-        output = Vec::from_raw_parts(out_ptr as *mut f32, out_size, out_size)
-    }
+    let out_size = out_auto_ptr.size().unwrap() as usize;
+    let mut output = Vec::from_raw_parts(out_ptr as *mut f32, out_size, out_size);
 
     let mut src_data = SRC_DATA {
         data_in: input[input_offset as usize..].as_ptr(),
@@ -106,10 +100,7 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samplerate_
         src_ratio: source_ratio,
     };
 
-    let result = unsafe {
-        src_process(instance as *mut SRC_STATE, &mut src_data)
-    };
-
+    let result = src_process(instance as *mut SRC_STATE, &mut src_data);
     let prog = [src_data.input_frames_used as jint, src_data.output_frames_gen as jint];
 
     env

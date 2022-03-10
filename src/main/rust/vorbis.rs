@@ -77,7 +77,7 @@ fn build_ogg_packet(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_create(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_create(
     _: JNIEnv,
     _: JClass
 ) -> jlong {
@@ -88,7 +88,7 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_Vorb
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_initialise(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_initialise(
     env: JNIEnv,
     _: JClass,
     instance: jlong,
@@ -104,39 +104,39 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_Vorb
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
 
     /* dummy comment instance, needs non-null vendor, otherwise headerin will reject setup (codebook) packet. */
-    let mut comment = unsafe { std::mem::zeroed() };
-    unsafe { vorbis_comment_init(&mut comment) };
+    let mut comment = std::mem::zeroed();
+    vorbis_comment_init(&mut comment);
     comment.vendor = &mut 0;
 
     /* pass in identification header packet */
-    let mut packet: ogg_packet = unsafe { std::mem::zeroed() };
+    let mut packet: ogg_packet = std::mem::zeroed();
     build_ogg_packet(env, &mut packet, id_direct_buffer, id_offset as usize, id_length as i64, true);
 
-    let mut error = unsafe { vorbis_synthesis_headerin(state.info_ptr, &mut comment, &mut packet) };
+    let mut error = vorbis_synthesis_headerin(state.info_ptr, &mut comment, &mut packet);
     if error != 0 {
         return error | 0x01000000;
     };
 
     build_ogg_packet(env, &mut packet, setup_direct_buffer, setup_offset as usize, setup_length as i64, false);
 
-    error = unsafe { vorbis_synthesis_headerin(state.info_ptr, &mut comment, &mut packet) };
+    error = vorbis_synthesis_headerin(state.info_ptr, &mut comment, &mut packet);
     if error != 0 {
         return error | 0x01000000;
     };
 
-    error = unsafe { vorbis_synthesis_init(state.dsp_state.as_mut_ptr(), state.info_ptr) };
+    error = vorbis_synthesis_init(state.dsp_state.as_mut_ptr(), state.info_ptr);
     if error != 0 {
         return 0;
     };
 
-    unsafe { vorbis_block_init(state.dsp_state.as_mut_ptr(), state.block.as_mut_ptr()) };
+    vorbis_block_init(state.dsp_state.as_mut_ptr(), state.block.as_mut_ptr());
     state.initialized = true;
 
     1
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_getChannelCount(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_getChannelCount(
     _: JNIEnv,
     _: JClass,
     instance: jlong
@@ -144,11 +144,11 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_Vorb
     debug!("(vorbis) getChannelCount, instance: {}", instance);
 
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
-    Box::leak(unsafe { Box::from_raw(state.info_ptr) }).channels
+    Box::leak(Box::from_raw(state.info_ptr)).channels
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_input(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_input(
     env: JNIEnv,
     _: JClass,
     instance: jlong,
@@ -161,20 +161,20 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_Vorb
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
 
     /* build packet. */
-    let mut packet = unsafe { std::mem::zeroed() };
+    let mut packet = std::mem::zeroed();
     build_ogg_packet(env, &mut packet, buffer, buffer_offset as usize, buffer_length as i64, false);
 
     /* synthesize packet */
-    let error = unsafe { vorbis_synthesis(state.block.as_mut_ptr(), &mut packet) };
+    let error = vorbis_synthesis(state.block.as_mut_ptr(), &mut packet);
     if error != 0 {
         return error
     }
 
-    unsafe { vorbis_synthesis_blockin(state.dsp_state.as_mut_ptr(), state.block.as_mut_ptr()) }
+    vorbis_synthesis_blockin(state.dsp_state.as_mut_ptr(), state.block.as_mut_ptr())
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_output(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_output(
     env: JNIEnv,
     _: JClass,
     instance: jlong,
@@ -186,7 +186,7 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_Vorb
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
     let mut buffers = Pcm::new();
 
-    let available = unsafe { vorbis_synthesis_pcmout(state.dsp_state.as_mut_ptr(), &mut buffers.internal) as usize };
+    let available = vorbis_synthesis_pcmout(state.dsp_state.as_mut_ptr(), &mut buffers.internal) as usize;
     let buffer_length = length as usize;
 
     let chunk = if available > buffer_length { buffer_length } else { available };
@@ -211,16 +211,14 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_Vorb
             return -1
         };
 
-        unsafe {
-            vorbis_synthesis_read(state.dsp_state.as_mut_ptr(), chunk as i32)
-        };
+        vorbis_synthesis_read(state.dsp_state.as_mut_ptr(), chunk as i32);
     };
 
     chunk as jint
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_destroy(
+pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_VorbisDecoderLibrary_destroy(
     _: JNIEnv,
     _: JClass,
     instance: jlong
@@ -229,15 +227,10 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorbis_Vorb
 
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
     if state.initialized {
-        unsafe {
-            vorbis_block_clear(state.block.as_mut_ptr());
-            vorbis_dsp_clear(state.dsp_state.as_mut_ptr());
-        }
+        vorbis_block_clear(state.block.as_mut_ptr());
+        vorbis_dsp_clear(state.dsp_state.as_mut_ptr());
     }
 
-    unsafe {
-        vorbis_info_clear(state.info_ptr);
-    };
-
+    vorbis_info_clear(state.info_ptr);
     std::mem::drop(instance as VorbisStateHandle);
 }
