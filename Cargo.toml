@@ -18,5 +18,4 @@ ogg-sys = "0.0.9"            # ogg
 audiopus_sys = "0.2.1"       # opus
 vorbis-sys = "0.1.1"         # vorbis
 libsamplerate-sys = "0.1.10" # samplerate
-env_logger = "0.9.0"
 log = "0.4.14"
