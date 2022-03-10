@@ -1,26 +1,27 @@
-import com.sedmelluq.discord.lavaplayer.natives.ConnectorNativeLibLoader
+@file:OptIn(KordVoice::class)
+
+import com.github.natanbc.lavadsp.timescale.TimescalePcmAudioFilter
+import com.sedmelluq.discord.lavaplayer.filter.FloatPcmAudioFilter
+import com.sedmelluq.discord.lavaplayer.filter.ResamplingPcmAudioFilter
 import com.sedmelluq.discord.lavaplayer.player.AudioConfiguration
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.FunctionalResultHandler
-import com.sedmelluq.discord.lavaplayer.player.event.TrackEndEvent
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
+import dev.kord.common.Color
 import dev.kord.common.annotation.KordVoice
+import dev.kord.common.entity.Snowflake
 import dev.kord.common.ratelimit.BucketRateLimiter
 import dev.kord.core.Kord
-import dev.kord.core.behavior.reply
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
 import dev.kord.gateway.DefaultGateway
 import dev.kord.gateway.Intent
 import dev.kord.gateway.Intents
-import dev.kord.rest.builder.message.create.embed
-import dev.kord.voice.AudioFrame
-import dev.kord.voice.AudioProvider
-import gg.mixtape.natives.connector.ConnectorDebugLibrary
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import mu.KotlinLogging
 import java.lang.management.ManagementFactory
 import kotlin.coroutines.resume
@@ -28,14 +29,17 @@ import kotlin.coroutines.suspendCoroutine
 import kotlin.text.Typography.bullet
 import kotlin.time.Duration.Companion.seconds
 
+const val PRIMARY_COLOR = 0xB963A5
+
+val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 val log = KotlinLogging.logger { }
+val apm = DefaultAudioPlayerManager()
+val players = mutableMapOf<Snowflake, Player>()
 
-@OptIn(DelicateCoroutinesApi::class, KordVoice::class)
+lateinit var kord: Kord
+
 suspend fun main() {
-    ConnectorNativeLibLoader.loadConnectorLibrary()
-    ConnectorDebugLibrary.configureLogging()
-
-    val kord = Kord(System.getenv("BOT_TOKEN")) {
+    kord = Kord(System.getenv("BOT_TOKEN")) {
         gateways { _, shards ->
             val rateLimiter = BucketRateLimiter(1, 5.seconds)
             shards.map {
@@ -47,98 +51,82 @@ suspend fun main() {
         }
     }
 
-    val players = DefaultAudioPlayerManager()
-
-    players.configuration.apply {
+    apm.configuration.apply {
         resamplingQuality = AudioConfiguration.ResamplingQuality.HIGH
     }
 
-    AudioSourceManagers.registerRemoteSources(players)
-    AudioSourceManagers.registerLocalSource(players)
+    AudioSourceManagers.registerRemoteSources(apm)
+    AudioSourceManagers.registerLocalSource(apm)
 
     kord.on<MessageCreateEvent> {
         if (message.author?.isBot != false || !message.content.startsWith("!/")) {
             return@on
         }
 
-        val args = message.content
-            .drop(2)
-            .split(" +".toRegex())
-            .toMutableList()
+        val guildId = message.data.guildId.value ?: return@on
+        val args = message.content.drop(2).split(" +".toRegex()).toMutableList()
 
         when (val command = args.removeFirst()) {
+            "join" -> {
+                val player = Player.create(message) ?: return@on
+
+                message.replyEmbed {
+                    description = "Joined ${player.voiceChannel?.mention}"
+                    color = Color(PRIMARY_COLOR)
+                }
+            }
+
             "play" -> {
                 val query = args.joinToString(" ")
 
                 /* load the item */
                 val track = suspendCoroutine<AudioTrack?> { cont ->
-                    players.loadItem(query, FunctionalResultHandler(
-                        { cont.resume(it) },
-                        { cont.resume(it.tracks.first()) },
-                        { cont.resume(null) },
-                        { cont.resume(null) },
-                    ))
+                    apm.loadItem(query,
+                        FunctionalResultHandler(
+                            { cont.resume(it) },
+                            { cont.resume(it.tracks.first()) },
+                            { cont.resume(null) },
+                            { cont.resume(null) },
+                        ))
                 } ?: return@on
 
-                val player = players.createPlayer()
+                val player = Player.create(message) ?: return@on
 
-                /*player.on<TrackStartEvent> {
-                    println("waiting timescale")
-                    delay(5000)
+                player.audioPlayer.startTrack(track, false)
+            }
 
-                    println("setting timescale")
-                    player.setFilterFactory { _, format, output ->
-                        val timescale = TimescalePcmAudioFilter(output, format.channelCount, format.sampleRate)
-                        timescale.pitch = 1.1
+            "nightcore" -> {
+                val player = players[guildId] ?: return@on
 
-                        val filter: FloatPcmAudioFilter = ResamplingPcmAudioFilter(
-                            players.configuration,
-                            format.channelCount,
-                            timescale,
-                            format.sampleRate,
-                            (format.sampleRate / 1.125).toInt()
-                        )
+                player.audioPlayer.setFilterFactory { track, format, output ->
+                    val timescale = TimescalePcmAudioFilter(output, format.channelCount, format.sampleRate)
+                    timescale.pitch = 1.2
 
-                        listOf(filter)
-                    }
-                }*/
+                    val filter: FloatPcmAudioFilter = ResamplingPcmAudioFilter(
+                        apm.configuration,
+                        format.channelCount,
+                        timescale,
+                        format.sampleRate,
+                        (format.sampleRate / 1.125).toInt()
+                    )
 
-                /* join vc */
-                val vc = message.getAuthorAsMember()?.getVoiceStateOrNull()?.getChannelOrNull()
-                    ?: return@on
-
-                val connection = vc.connect {
-                    audioProvider = AudioProvider { AudioFrame.fromData(player.provide()?.data) }
-                }
-
-                player.addListener {
-                    if (it is TrackEndEvent) {
-                        runBlocking { connection.shutdown() }
-                        player.destroy()
-                    }
-                }
-
-                player.playTrack(track)
-
-                message.reply {
-                    embed { description = "Now playing [**${track.info.title}**](${track.info.uri})" }
+                    listOf(filter)
                 }
             }
 
-            "info" -> message.reply {
+            "info" -> message.replyEmbed {
                 val runtime = Runtime.getRuntime()
-                val usage = runtime.totalMemory() - runtime.freeMemory()
-
-                embed {
-                    description = buildString {
-                        appendLine("$bullet Threads: ${ManagementFactory.getThreadMXBean().threadCount}")
-                        appendLine("$bullet Memory Usage: ${usage / 1024 / 1024} MB")
-                    }
+                description = buildString {
+                    appendLine("$bullet Threads: ${ManagementFactory.getThreadMXBean().threadCount}")
+                    appendLine("$bullet Memory Usage: ${(runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024} MB")
                 }
+
+                color = Color(PRIMARY_COLOR)
             }
 
-            else -> message.reply {
-                embed { description = "Never heard of a command with the name: **$command**" }
+            else -> message.replyEmbed {
+                description = "Never heard of a command with the name: **$command**"
+                color = Color(PRIMARY_COLOR)
             }
         }
     }
