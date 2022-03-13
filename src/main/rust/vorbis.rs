@@ -82,7 +82,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorb
     _: JNIEnv,
     _: JClass
 ) -> jlong {
-    println!("(vorbis) create");
+    debug!("(vorbis) create");
 
     to_ptr!(VorbisState::new()) as jlong
 }
@@ -99,7 +99,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorb
     setup_offset: jint,
     setup_length: jint,
 ) -> jint {
-    println!("(vorbis) initialise, instance: {}", instance);
+    debug!("(vorbis) initialise, instance: {}", instance);
 
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
 
@@ -141,7 +141,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorb
     _: JClass,
     instance: jlong
 ) -> jint {
-    println!("(vorbis) getChannelCount, instance: {}", instance);
+    debug!("(vorbis) getChannelCount, instance: {}", instance);
 
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
     state.get_info().channels
@@ -156,7 +156,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorb
     buffer_offset: jint,
     buffer_length: jint,
 ) -> jint {
-    println!("(vorbis) input, instance: {}, buffer_offset: {}, buffer_length: {}", instance, buffer_offset, buffer_length);
+    debug!("(vorbis) input, instance: {}, buffer_offset: {}, buffer_length: {}", instance, buffer_offset, buffer_length);
 
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
 
@@ -181,7 +181,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorb
     channels: jobjectArray,
     length: jint
 ) -> jint {
-    println!("(vorbis) output, instance: {}, length: {}", instance, length);
+    debug!("(vorbis) output, instance: {}, length: {}", instance, length);
 
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
     let mut buffers = Pcm::new();
@@ -223,7 +223,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorb
     _: JClass,
     instance: jlong
 ) {
-    println!("(vorbis) destroy, instance: {}", instance);
+    debug!("(vorbis) destroy, instance: {}", instance);
 
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
     if state.initialized {

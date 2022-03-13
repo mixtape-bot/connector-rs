@@ -12,11 +12,11 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samp
     src_type: jint,
     channels: jint,
 ) -> jlong {
-    println!("(samplerate) create, src_type: {}, channels: {}", src_type, channels);
+    debug!("(samplerate) create, src_type: {}, channels: {}", src_type, channels);
 
     let mut error = 0;
     let handle = src_new(src_type, channels, &mut error) as jlong;
-    println!("(samplerate) new: {}", handle);
+    debug!("(samplerate) new: {}", handle);
 
     handle
 }
@@ -27,7 +27,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samp
     _: JClass,
     instance: jlong,
 ) {
-    println!("(samplerate) destroy, handle: {}", instance);
+    debug!("(samplerate) destroy, handle: {}", instance);
 
     let handle = instance as *mut SRC_STATE;
 
@@ -42,7 +42,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samp
     _: JClass,
     instance: jlong,
 ) {
-    println!("(samplerate) reset, handle: {}", instance);
+    debug!("(samplerate) reset, handle: {}", instance);
     src_reset(instance as *mut SRC_STATE);
 }
 
@@ -61,7 +61,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samp
     source_ratio: jdouble,
     progress: jintArray,
 ) -> jint {
-    println!(
+    debug!(
         "(samplerate) process, handle: {}, output_length: {}, output_offset: {}, input_length: {}, input_offset: {}, source_ratio: {}, is eof: {}",
         instance,
         output_length,

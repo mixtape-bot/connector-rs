@@ -7,7 +7,7 @@ use mpg123_sys::*;
 
 #[no_mangle]
 pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_mp3_Mp3DecoderLibrary_create(_: JNIEnv, _: JClass) -> jlong {
-    println!("(mp3) create");
+    debug!("(mp3) create");
 
     mpg123_init();
 
@@ -26,7 +26,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_mp3_
 
 #[no_mangle]
 pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_mp3_Mp3DecoderLibrary_destroy(_: JNIEnv, _: JClass, instance: jlong) {
-    println!("(mp3) destroy, instance: {}", instance);
+    debug!("(mp3) destroy, instance: {}", instance);
 
     let handle = instance as *mut mpg123_handle;
     if !handle.is_null() {
@@ -46,7 +46,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_mp3_
     output_buffer: jobject,
     output_length: jint,
 ) -> jlong {
-    println!("(mp3) decode, instance: {}, input_length: {}, output_length: {}", instance, input_length, output_length);
+    debug!("(mp3) decode, instance: {}, input_length: {}, output_length: {}", instance, input_length, output_length);
 
     if instance == 0 {
         return -1;

@@ -17,7 +17,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus
     sample_rate: jint,
     channel_count: jint,
 ) -> jlong {
-    println!("(opus) decoder:create, sample_rate: {}, channel_count: {}", sample_rate, channel_count);
+    debug!("(opus) decoder:create, sample_rate: {}, channel_count: {}", sample_rate, channel_count);
 
     /* create the decoder */
     let mut opus_code = 0;
@@ -38,7 +38,7 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusDe
     _: JClass,
     decoder_ptr: jlong,
 ) {
-    println!("(opus) decoder:destroy, instance: {}", decoder_ptr);
+    debug!("(opus) decoder:destroy, instance: {}", decoder_ptr);
 
     let ptr = decoder_ptr as OpusDecoderHandle;
     if !ptr.is_null() {
@@ -57,7 +57,7 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusDe
     output_buffer: jobject,
     frame_size: jint,
 ) -> jint {
-    println!("(opus) decoder:decode, instance: {}, input_size: {}, frame_size: {}", decoder_ptr, input_size, frame_size);
+    debug!("(opus) decoder:decode, instance: {}, input_size: {}, frame_size: {}", decoder_ptr, input_size, frame_size);
 
     let decoder = from_ptr!(decoder_ptr as OpusDecoderHandle);
 
@@ -80,7 +80,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus
     application: jint,
     quality: jint,
 ) -> jlong {
-    println!("(opus) encoder:create, sample_rate: {}, channel_count: {}, application: {}, quality: {}", sample_rate, channel_count, application, quality);
+    debug!("(opus) encoder:create, sample_rate: {}, channel_count: {}, application: {}, quality: {}", sample_rate, channel_count, application, quality);
 
     let mut opus_code = 0;
     let encoder = opus_encoder_create(sample_rate, channel_count, application, &mut opus_code);
@@ -99,7 +99,7 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusEn
     _: JClass,
     encoder_ptr: jlong,
 ) {
-    println!("(opus) encoder:destroy, instance: {}", encoder_ptr);
+    debug!("(opus) encoder:destroy, instance: {}", encoder_ptr);
 
     let ptr = encoder_ptr as OpusEncoderHandle;
     if !ptr.is_null() {
@@ -118,7 +118,7 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_opus_OpusEn
     output_buffer: JByteBuffer,
     output_capacity: jint,
 ) -> jint {
-    println!("(opus) encoder:encode, instance: {}, frame_size: {}, output_capacity: {}", encoder_ptr, frame_size, output_capacity);
+    debug!("(opus) encoder:encode, instance: {}, frame_size: {}, output_capacity: {}", encoder_ptr, frame_size, output_capacity);
 
     let encoder = from_ptr!(encoder_ptr as OpusEncoderHandle);
 

@@ -12,7 +12,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_aac_
     _: JClass,
     transport_type: jint,
 ) -> jlong {
-    println!("(aac) open, transport_type: {}", transport_type);
+    debug!("(aac) open, transport_type: {}", transport_type);
     aacDecoder_Open(transport_type, 1) as jlong
 }
 
@@ -22,7 +22,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_aac_
     _: JClass,
     handle: jlong,
 ) {
-    println!("(aac) destroy, decoder: {}.", handle);
+    debug!("(aac) destroy, decoder: {}.", handle);
     aacDecoder_Close(handle as HANDLE_AACDECODER)
 }
 
@@ -33,7 +33,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_aac_
     handle: jlong,
     buffer_data: jlong,
 ) -> jint {
-    println!("(aac) configure, decoder: {}, buffer: {:?}, buffer_size: {}.", handle, buffer_data, 8);
+    debug!("(aac) configure, decoder: {}, buffer: {:?}, buffer_size: {}.", handle, buffer_data, 8);
 
     let buffer_size = std::mem::size_of::<jlong>();
     let mut buffer_ptr = to_ptr!(buffer_data) as *mut u8;
@@ -50,7 +50,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_aac_
     buffer_offset: jint,
     buffer_length: jint,
 ) -> jint {
-    println!("(aac) fill, decoder: {}, buffer_offset: {}, buffer_length: {}", decoder_handle, buffer_offset, buffer_length);
+    debug!("(aac) fill, decoder: {}, buffer_offset: {}, buffer_length: {}", decoder_handle, buffer_offset, buffer_length);
 
     let input = jni
         .get_direct_buffer_address(buffer)
@@ -68,7 +68,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_aac_
     );
 
     let used = (length - offset - buffer_valid_length) as jint;
-    println!("(aac) fill, used {}", used);
+    debug!("(aac) fill, used {}", used);
 
     return used;
 }
@@ -82,7 +82,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_aac_
     buffer_length: jint,
     flush: jboolean,
 ) -> jint {
-    println!("(aac) decode, decoder_handle: {}, buffer_length: {}, flush: {}", decoder_handle, buffer_length, flush);
+    debug!("(aac) decode, decoder_handle: {}, buffer_length: {}, flush: {}", decoder_handle, buffer_length, flush);
 
     let output = get_direct_short_buffer_address(jni, buffer)
         .unwrap();
@@ -102,7 +102,7 @@ pub extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_aac_AacDeco
     _: JClass,
     decoder_handle: jlong,
 ) -> jlong {
-    println!("(aac) getStreamInfo, decoder_handle: {}", decoder_handle);
+    debug!("(aac) getStreamInfo, decoder_handle: {}", decoder_handle);
 
     let decoder_handle = decoder_handle as HANDLE_AACDECODER;
     if decoder_handle.is_null() {
