@@ -1,9 +1,9 @@
-# Toolchains & Stuff
+# Targets & Stuff
 
 A table of natives grouped together with their identifier
-and [compatible Rust toolchain](https://rust-lang.github.io/rustup/concepts/toolchains.html)
+and [compatible Rust target](https://rust-lang.github.io/rustup/cross-compilation.html?highlight=targets#cross-compilation)
 
-| Identifier (`platform-architecture`) | Compatible Rust Toolchain          | Notes                                                                      |
+| Identifier (`platform-architecture`) | Compatible Rust Target                  | Notes                                                                      |
 |--------------------------------------|------------------------------------|----------------------------------------------------------------------------|
 | `darwin`\*                           | `x86_64-apple-darwin`              |
 | `darwin-x86-64`*\*                   | `x86_64-apple-darwin`              |
