@@ -1,3 +1,4 @@
+use std::os::raw::c_long;
 use jni::JNIEnv;
 use jni::objects::{JClass, ReleaseMode};
 use jni::sys::{jboolean, jdouble, jfloatArray, jint, jintArray, jlong};
@@ -11,11 +12,11 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samp
     src_type: jint,
     channels: jint,
 ) -> jlong {
-    debug!("(samplerate) create, src_type: {}, channels: {}", src_type, channels);
+    println!("(samplerate) create, src_type: {}, channels: {}", src_type, channels);
 
     let mut error = 0;
     let handle = src_new(src_type, channels, &mut error) as jlong;
-    debug!("(samplerate) new: {}", handle);
+    println!("(samplerate) new: {}", handle);
 
     handle
 }
@@ -26,13 +27,13 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samp
     _: JClass,
     instance: jlong,
 ) {
-    debug!("(samplerate) destroy, handle: {}", instance);
+    println!("(samplerate) destroy, handle: {}", instance);
 
     let handle = instance as *mut SRC_STATE;
 
     /* destroy given instance */
     src_delete(handle);
-    std::mem::drop(handle);
+    // std::mem::drop(handle);
 }
 
 #[no_mangle]
@@ -41,7 +42,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samp
     _: JClass,
     instance: jlong,
 ) {
-    debug!("(samplerate) reset, handle: {}", instance);
+    println!("(samplerate) reset, handle: {}", instance);
     src_reset(instance as *mut SRC_STATE);
 }
 
@@ -60,7 +61,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samp
     source_ratio: jdouble,
     progress: jintArray,
 ) -> jint {
-    debug!(
+    println!(
         "(samplerate) process, handle: {}, output_length: {}, output_offset: {}, input_length: {}, input_offset: {}, source_ratio: {}, is eof: {}",
         instance,
         output_length,
@@ -91,11 +92,11 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_samp
 
     let mut src_data = SRC_DATA {
         data_in: input[input_offset as usize..].as_ptr(),
-        input_frames: input_length as i64,
+        input_frames: input_length as c_long,
         input_frames_used: 0,
         end_of_input: eof as i32,
         data_out: output[output_offset as usize..].as_mut_ptr(),
-        output_frames: output_length as i64,
+        output_frames: output_length as c_long,
         output_frames_gen: 0,
         src_ratio: source_ratio,
     };

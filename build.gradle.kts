@@ -1,7 +1,8 @@
+import org.apache.tools.ant.taskdefs.condition.Os
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.6.0"
+    kotlin("jvm")
 }
 
 group = "gg.mixtape"
@@ -22,11 +23,10 @@ dependencies {
     }
 
     testImplementation("ch.qos.logback:logback-classic:1.2.11")
-    testImplementation("dev.kord:kord-core:0.8.x-SNAPSHOT")
+    testImplementation("dev.kord:kord-core:0.8.0-M11")
 
     testImplementation("com.github.natanbc:lavadsp:0.7.7")
     testImplementation("com.github.natanbc:native-loader:0.7.2")
-
 }
 
 java {
@@ -34,19 +34,24 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
-sourceSets {
-    create("rust") {
-    }
-}
 
-tasks.create<Exec>("buildRust") {
-    workingDir = file("src/main/rust")
-    commandLine = listOf("cargo", "build", "--release")
+Toolchains.ALL.forEach { toolchain ->
+    tasks.register<Exec>("compileRust${toolchain.name}") {
+        commandLine = listOf("cargo", "build", "--release", "--target", toolchain.rustTarget)
 
-    copy {
-        from("build/rust/release/libconnector.so")
-        into("src/main/resources/natives/linux-x86-64")
+        /* deploy the native files */
+        copy {
+            from("build/rust/${toolchain.buildPath}")
+            into("src/main/resources/${toolchain.destFolder}")
+        }
     }
+
+    /*tasks.register<Copy>("deployRust${toolchain.name}") {
+        copy {
+            from("build/rust/${toolchain.buildPath}")
+            into("src/main/resources/${toolchain.destFolder}")
+        }
+    }*/
 }
 
 tasks.withType<KotlinCompile> {

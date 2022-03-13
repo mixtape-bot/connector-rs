@@ -1,4 +1,5 @@
 use std::mem::MaybeUninit;
+use std::os::raw::c_long;
 use jni::JNIEnv;
 use jni::objects::{JByteBuffer, JClass};
 use jni::sys::{jfloatArray, jint, jlong, jobjectArray};
@@ -35,19 +36,19 @@ impl VorbisState {
         unsafe { vorbis_info_init(&mut info) };
 
         Self {
-            info_ptr: Box::into_raw(Box::new(info)),
+            info_ptr: to_ptr!(info),
             block: MaybeUninit::uninit(),
             dsp_state: MaybeUninit::uninit(),
             initialized: false
         }
     }
 
-    fn get_info(&self) -> &mut vorbis_info {
-        Box::leak(unsafe { Box::from_raw(self.info_ptr) })
+    fn from_ptr(ptr: VorbisStateHandle) -> &'static mut Self {
+        from_ptr!(ptr)
     }
 
-    fn from_ptr(ptr: VorbisStateHandle) -> &'static mut Self {
-        Box::leak(unsafe { Box::from_raw(ptr) })
+    fn get_info(&self) -> &mut vorbis_info {
+        from_ptr!(self.info_ptr)
     }
 
     fn get_channel_count(&self) -> i32 {
@@ -67,7 +68,7 @@ fn build_ogg_packet(
         .get_direct_buffer_address(buffer)
         .expect("Unable to get packet");
 
-    ogg_packet.bytes = length;
+    ogg_packet.bytes = length as c_long;
     ogg_packet.b_o_s = if is_beginning { 1 } else { 0 };
     ogg_packet.packet = packet[offset..].as_mut_ptr();
     ogg_packet.packetno = 0;
@@ -81,10 +82,9 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorb
     _: JNIEnv,
     _: JClass
 ) -> jlong {
-    debug!("(vorbis) create");
+    println!("(vorbis) create");
 
-    let state = VorbisState::new();
-    Box::into_raw(Box::new(state)) as jlong
+    to_ptr!(VorbisState::new()) as jlong
 }
 
 #[no_mangle]
@@ -99,7 +99,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorb
     setup_offset: jint,
     setup_length: jint,
 ) -> jint {
-    debug!("(vorbis) initialise, instance: {}", instance);
+    println!("(vorbis) initialise, instance: {}", instance);
 
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
 
@@ -141,10 +141,10 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorb
     _: JClass,
     instance: jlong
 ) -> jint {
-    debug!("(vorbis) getChannelCount, instance: {}", instance);
+    println!("(vorbis) getChannelCount, instance: {}", instance);
 
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
-    Box::leak(Box::from_raw(state.info_ptr)).channels
+    state.get_info().channels
 }
 
 #[no_mangle]
@@ -156,7 +156,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorb
     buffer_offset: jint,
     buffer_length: jint,
 ) -> jint {
-    debug!("(vorbis) input, instance: {}, buffer_offset: {}, buffer_length: {}", instance, buffer_offset, buffer_length);
+    println!("(vorbis) input, instance: {}, buffer_offset: {}, buffer_length: {}", instance, buffer_offset, buffer_length);
 
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
 
@@ -181,7 +181,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorb
     channels: jobjectArray,
     length: jint
 ) -> jint {
-    debug!("(vorbis) output, instance: {}, length: {}", instance, length);
+    println!("(vorbis) output, instance: {}, length: {}", instance, length);
 
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
     let mut buffers = Pcm::new();
@@ -223,7 +223,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_vorb
     _: JClass,
     instance: jlong
 ) {
-    debug!("(vorbis) destroy, instance: {}", instance);
+    println!("(vorbis) destroy, instance: {}", instance);
 
     let state = VorbisState::from_ptr(instance as VorbisStateHandle);
     if state.initialized {

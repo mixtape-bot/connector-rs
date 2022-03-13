@@ -36,3 +36,15 @@ macro_rules! deref {
         }
     };
 }
+
+macro_rules! to_ptr {
+    ($obj:expr) => {
+        Box::into_raw(Box::new($obj))
+    };
+}
+
+macro_rules! from_ptr {
+    ($ptr:expr) => {
+        unsafe { &mut *$ptr }
+    };
+}

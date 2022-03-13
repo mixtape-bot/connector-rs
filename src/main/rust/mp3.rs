@@ -7,12 +7,14 @@ use mpg123_sys::*;
 
 #[no_mangle]
 pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_mp3_Mp3DecoderLibrary_create(_: JNIEnv, _: JClass) -> jlong {
-    debug!("(mp3) create");
+    println!("(mp3) create");
 
     mpg123_init();
 
     let handle = mpg123_new(std::ptr::null_mut(), std::ptr::null_mut());
-    // TODO: try to check if this is a null handle.
+    if handle.is_null() {
+        return 0
+    }
 
     if mpg123_open_feed(handle) != 0 {
         mpg123_delete(handle);
@@ -24,12 +26,14 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_mp3_
 
 #[no_mangle]
 pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_mp3_Mp3DecoderLibrary_destroy(_: JNIEnv, _: JClass, instance: jlong) {
-    debug!("(mp3) destroy, instance: {}", instance);
+    println!("(mp3) destroy, instance: {}", instance);
 
     let handle = instance as *mut mpg123_handle;
-
-    mpg123_close(handle);
-    mpg123_delete(handle);
+    if !handle.is_null() {
+        mpg123_close(handle);
+        mpg123_delete(handle);
+        drop(handle);
+    }
 }
 
 #[no_mangle]
@@ -42,7 +46,7 @@ pub unsafe extern "system" fn Java_com_sedmelluq_discord_lavaplayer_natives_mp3_
     output_buffer: jobject,
     output_length: jint,
 ) -> jlong {
-    debug!("(mp3) decode, instance: {}, input_length: {}, output_length: {}", instance, input_length, output_length);
+    println!("(mp3) decode, instance: {}, input_length: {}, output_length: {}", instance, input_length, output_length);
 
     if instance == 0 {
         return -1;

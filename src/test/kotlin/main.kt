@@ -13,15 +13,19 @@ import dev.kord.common.annotation.KordVoice
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.ratelimit.BucketRateLimiter
 import dev.kord.core.Kord
+import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
 import dev.kord.gateway.DefaultGateway
 import dev.kord.gateway.Intent
 import dev.kord.gateway.Intents
+import dev.kord.gateway.Ticker
+import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import java.lang.management.ManagementFactory
 import kotlin.coroutines.resume
@@ -47,6 +51,14 @@ suspend fun main() {
                     url = "wss://gateway.discord.gg/?v=9&encoding=json&compress=zlib-stream"
                     identifyRateLimiter = rateLimiter
                 }
+            }
+        }
+    }
+
+    scope.launch {
+        Ticker(Dispatchers.Default).tickAt(5000) {
+            kord.unsafe.messageChannel(Snowflake(830270945213284403)).createEmbed {
+                applyInfoEmbed()
             }
         }
     }
@@ -115,13 +127,7 @@ suspend fun main() {
             }
 
             "info" -> message.replyEmbed {
-                val runtime = Runtime.getRuntime()
-                description = buildString {
-                    appendLine("$bullet Threads: ${ManagementFactory.getThreadMXBean().threadCount}")
-                    appendLine("$bullet Memory Usage: ${(runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024} MB")
-                }
-
-                color = Color(PRIMARY_COLOR)
+                applyInfoEmbed()
             }
 
             else -> message.replyEmbed {
@@ -142,4 +148,14 @@ suspend fun main() {
             +Intent.GuildVoiceStates
         }
     }
+}
+
+fun EmbedBuilder.applyInfoEmbed() {
+    val runtime = Runtime.getRuntime()
+    description = buildString {
+        appendLine("$bullet Threads: ${ManagementFactory.getThreadMXBean().threadCount}")
+        appendLine("$bullet Memory Usage: ${(runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024} MB")
+    }
+
+    color = Color(PRIMARY_COLOR)
 }

@@ -17,11 +17,11 @@ codegen-units = 1
 
 [dependencies]
 jni = { version = "0.19.0" } # jni bindings
+log = "0.4.14"               # logging
 
 fdk-aac-sys = "0.4.0"        # aac
 mpg123-sys = "0.6.0"         # mp3
 ogg-sys = "0.0.9"            # ogg
 audiopus_sys = "0.2.1"       # opus
 vorbis-sys = "0.1.1"         # vorbis
-libsamplerate-sys = "0.1.10" # samplerate
-log = "0.4.14"
+libsamplerate-sys = "0.1.9"  # samplerate
